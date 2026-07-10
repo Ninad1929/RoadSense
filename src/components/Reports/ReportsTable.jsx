@@ -20,10 +20,10 @@ export default function ReportsTable({ reports }) {
           <thead>
             <tr className="border-b border-slate-200">
               <th className="pb-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Road Name</th>
-              <th className="pb-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Location</th>
+              <th className="pb-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Latitude</th>
+              <th className="pb-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Longitude</th>
               <th className="pb-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Condition</th>
-              <th className="pb-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Confidence</th>
-              <th className="pb-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Time</th>
+              <th className="pb-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Timestamp</th>
               <th className="pb-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-right pr-2">Action</th>
             </tr>
           </thead>
@@ -35,18 +35,18 @@ export default function ReportsTable({ reports }) {
               >
                 <td className="py-4 text-xs font-semibold text-slate-800">{report.roadName}</td>
                 <td className="py-4 text-xs text-slate-500 font-mono">
-                  {report.lat.toFixed(4)}, {report.lng.toFixed(4)}
+                  {report.latitude.toFixed(4)}
+                </td>
+                <td className="py-4 text-xs text-slate-500 font-mono">
+                  {report.longitude.toFixed(4)}
                 </td>
                 <td className="py-4">
                   <span className={`inline-flex px-2 py-1 rounded-md text-[10px] font-bold border uppercase tracking-wider ${conditionBadge[report.condition]}`}>
                     {report.condition}
                   </span>
                 </td>
-                <td className="py-4 text-xs font-bold text-slate-700 font-mono">
-                  {report.confidence}%
-                </td>
                 <td className="py-4 text-xs font-semibold text-slate-500">
-                  {report.timestamp}
+                  {new Date(report.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                 </td>
                 <td className="py-4 text-right pr-2">
                   <button className="p-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors inline-flex items-center justify-center">

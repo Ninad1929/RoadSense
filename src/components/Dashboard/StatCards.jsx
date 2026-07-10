@@ -4,8 +4,6 @@ import {
   MinusCircle,
   CheckCircle2,
   Smartphone,
-  TrendingUp,
-  TrendingDown,
 } from 'lucide-react';
 
 const cardConfig = [
@@ -59,7 +57,7 @@ export default function StatCards({ statistics }) {
         return (
           <div
             key={card.key}
-            className={`card-shadow flex items-center gap-3 rounded-xl bg-white border border-slate-200
+            className={`card-shadow flex items-center gap-4 rounded-xl bg-white border border-slate-200
               p-4 h-full animate-fade-in
               ${isLastCard ? 'col-span-2 md:col-span-1' : ''} group cursor-pointer`}
           >
@@ -76,16 +74,6 @@ export default function StatCards({ statistics }) {
               <p className="text-xl font-extrabold text-slate-800 tracking-tight leading-none mt-1">
                 {value.toLocaleString()}
               </p>
-              <div
-                className={`inline-flex items-center gap-0.5 mt-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md ${card.trendColor}`}
-              >
-                {isPositive ? (
-                  <TrendingUp className="w-2.5 h-2.5" />
-                ) : (
-                  <TrendingDown className="w-2.5 h-2.5" />
-                )}
-                <span>{Math.abs(change)}%</span>
-              </div>
             </div>
           </div>
         );
