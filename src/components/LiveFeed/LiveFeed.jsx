@@ -1,59 +1,108 @@
-const conditionBadgeStyles = {
-  Poor: 'bg-red-50 text-red-600 border border-red-100',
-  Moderate: 'bg-amber-50 text-amber-600 border border-amber-100',
-  Good: 'bg-emerald-50 text-emerald-600 border border-emerald-100',
-};
+import {
+  AlertTriangle,
+  MinusCircle,
+  CheckCircle2,
+  MapPin,
+  Clock,
+} from 'lucide-react';
+import { formatReportTimestamp, getReportTimestampMs } from '../../utils/roadReport';
 
-const bulletColors = {
-  Poor: 'bg-red-500',
-  Moderate: 'bg-amber-500',
-  Good: 'bg-emerald-500',
+const conditionConfig = {
+  Poor: {
+    badge: 'bg-red-50 text-[#DC2626] border-red-100',
+    icon: AlertTriangle,
+    iconBg: 'bg-red-50',
+    iconColor: 'text-[#DC2626]',
+    dot: 'bg-[#DC2626]',
+  },
+  Moderate: {
+    badge: 'bg-amber-50 text-[#F59E0B] border-amber-100',
+    icon: MinusCircle,
+    iconBg: 'bg-amber-50',
+    iconColor: 'text-[#F59E0B]',
+    dot: 'bg-[#F59E0B]',
+  },
+  Good: {
+    badge: 'bg-green-50 text-[#16A34A] border-green-100',
+    icon: CheckCircle2,
+    iconBg: 'bg-green-50',
+    iconColor: 'text-[#16A34A]',
+    dot: 'bg-[#16A34A]',
+  },
 };
 
 export default function LiveFeed({ feedData }) {
-  // Sort by timestamp descending and keep only the latest 5 reports
   const latestFeed = [...feedData]
-    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-    .slice(0, 5);
+    .sort((a, b) => getReportTimestampMs(b.timestamp) - getReportTimestampMs(a.timestamp))
+    .slice(0, 8);
 
   return (
-    <div className="rounded-xl bg-white border border-slate-200 card-shadow flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-slate-100">
-        <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Live Feed</h3>
-        <button className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors">
+    <div className="rounded-xl bg-white border border-[#E2E8F0] card-shadow flex flex-col h-full overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-[#E2E8F0] flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-[#DC2626] pulse-dot" />
+          <h3 className="text-sm font-semibold text-[#334155]">Live Feed</h3>
+        </div>
+        <button className="text-xs font-medium text-[#2563EB] hover:text-[#1D4ED8] transition-colors duration-200">
           View All
         </button>
       </div>
 
-      {/* Feed Items */}
-      <div className="flex-1 px-4 py-1 divide-y divide-slate-100 overflow-hidden">
-        {latestFeed.map((item) => (
-          <div
-            key={item.id}
-            className="flex items-center justify-between py-3.5 animate-fade-in"
-          >
-            {/* Left side: status bullet and time/location */}
-            <div className="flex items-start gap-2.5 min-w-0">
-              <div className={`w-2 h-2 rounded-full ${bulletColors[item.condition]} mt-1.5 flex-shrink-0`} />
-              <div className="min-w-0">
-                <span className="text-[12px] font-bold text-slate-800 block leading-tight">
-                  {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
-                <span className="text-[12px] text-slate-500 block leading-tight truncate mt-0.5 font-medium">
-                  {item.roadName}
-                </span>
-              </div>
-            </div>
-
-            {/* Right side: condition badge */}
-            <div className="flex-shrink-0 ml-2">
-              <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border uppercase tracking-wider ${conditionBadgeStyles[item.condition]}`}>
-                {item.condition}
-              </span>
-            </div>
+      <div className="flex-1 overflow-y-auto min-h-0">
+        {latestFeed.length === 0 ? (
+          <div className="flex items-center justify-center h-full px-5">
+            <p className="text-sm text-slate-400 font-medium">No live events yet</p>
           </div>
-        ))}
+        ) : (
+          <ul className="divide-y divide-[#E2E8F0]">
+            {latestFeed.map((item) => {
+              const config = conditionConfig[item.condition] || conditionConfig.Good;
+              const StatusIcon = config.icon;
+
+              return (
+                <li
+                  key={item.id}
+                  className="px-5 py-3.5 hover:bg-[#F8FAFC] transition-colors duration-200 animate-fade-in"
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`w-8 h-8 rounded-lg ${config.iconBg} flex items-center justify-center flex-shrink-0 mt-0.5`}
+                    >
+                      <StatusIcon className={`w-4 h-4 ${config.iconColor}`} />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-medium text-[#334155] truncate">
+                          {item.roadName}
+                        </p>
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold border uppercase tracking-wide flex-shrink-0 ${config.badge}`}
+                        >
+                          {item.condition}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 mt-1.5">
+                        <MapPin className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                        <span className="text-xs text-slate-500 font-mono truncate">
+                          {item.latitude.toFixed(4)}, {item.longitude.toFixed(4)}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <Clock className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                        <span className="text-xs text-slate-400 font-medium">
+                          {formatReportTimestamp(item.timestamp)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
     </div>
   );

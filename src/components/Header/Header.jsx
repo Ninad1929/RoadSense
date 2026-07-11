@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Bell, Calendar, User, ChevronDown, Menu } from 'lucide-react';
+import { getPageMeta } from '../../config/navigation';
 
 export default function Header({ onMenuToggle }) {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const { pathname } = useLocation();
+  const { title, subtitle } = getPageMeta(pathname);
 
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 60000); // update every minute is enough since we only show minutes
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
 
@@ -24,46 +28,46 @@ export default function Header({ onMenuToggle }) {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-white border-b border-slate-200/80">
-      <div className="flex items-center justify-between px-6 py-4">
-        {/* Left Side: Hamburger menu & Section title */}
-        <div className="flex items-center gap-4">
+    <header className="sticky top-0 z-30 w-full bg-white border-b border-[#E2E8F0] shadow-sm">
+      <div className="flex items-center justify-between px-6 h-[64px]">
+        <div className="flex items-center gap-4 min-w-0">
           <button
             onClick={onMenuToggle}
-            className="p-2 -ml-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors lg:hidden"
+            className="p-2 -ml-2 rounded-xl text-[#334155] hover:text-slate-900 hover:bg-[#F8FAFC] transition-all duration-200 lg:hidden"
             title="Toggle Menu"
           >
             <Menu className="w-5 h-5" />
           </button>
-          <h2 className="text-xl font-bold text-blue-600 tracking-wide">Dashboard</h2>
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold text-[#334155] leading-tight">{title}</h2>
+            <p className="text-xs text-slate-400 font-medium hidden sm:block">{subtitle}</p>
+          </div>
         </div>
 
-        {/* Right Side: Date/Time, Alerts, Profile */}
-        <div className="flex items-center gap-6">
-          {/* Date & Time */}
-          <div className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-50 border border-slate-200/60 text-slate-600 font-medium">
-            <Calendar className="w-4 h-4 text-slate-400" />
-            <span className="text-sm font-semibold text-slate-600">{formatDateTime(currentTime)}</span>
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="hidden md:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
+            <Calendar className="w-4 h-4 text-slate-400 flex-shrink-0" />
+            <span className="text-sm font-medium text-[#334155] whitespace-nowrap">
+              {formatDateTime(currentTime)}
+            </span>
           </div>
 
-          {/* Notifications */}
-          <button className="relative p-2 rounded-xl border border-slate-200/60 bg-slate-50 hover:bg-slate-100/80 text-slate-500 hover:text-slate-800 transition-all duration-150 group">
-            <Bell className="w-5 h-5 text-slate-400 group-hover:text-slate-600 transition-colors" />
-            <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-[10px] font-bold flex items-center justify-center text-white shadow-md shadow-red-500/20">
+          <button className="relative p-2 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] hover:bg-white text-[#334155] transition-all duration-200">
+            <Bell className="w-[18px] h-[18px] text-slate-500" />
+            <span className="absolute -top-1 -right-1 w-[18px] h-[18px] bg-[#DC2626] rounded-full text-[10px] font-semibold flex items-center justify-center text-white">
               3
             </span>
           </button>
 
-          {/* User Profile */}
-          <button className="flex items-center gap-4 px-4 py-2 rounded-xl hover:bg-slate-50 transition-all duration-150 group">
-            <div className="w-9 h-9 rounded-full bg-slate-100 border border-slate-200/80 flex items-center justify-center shadow-sm">
-              <User className="w-4 h-4 text-slate-600" />
+          <button className="flex items-center gap-3 pl-2 pr-3 py-1.5 rounded-xl hover:bg-[#F8FAFC] transition-all duration-200">
+            <div className="w-8 h-8 rounded-full bg-[#2563EB]/10 border border-[#2563EB]/20 flex items-center justify-center">
+              <User className="w-4 h-4 text-[#2563EB]" />
             </div>
             <div className="hidden sm:block text-left">
-              <p className="text-sm font-bold text-slate-800 leading-tight">Admin</p>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Administrator</p>
+              <p className="text-sm font-semibold text-[#334155] leading-tight">Admin</p>
+              <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Administrator</p>
             </div>
-            <ChevronDown className="w-4 h-4 text-slate-400 hidden sm:block group-hover:text-slate-600 transition-colors" />
+            <ChevronDown className="w-4 h-4 text-slate-400 hidden sm:block" />
           </button>
         </div>
       </div>

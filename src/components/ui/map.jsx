@@ -4,9 +4,12 @@ import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } f
 export const Map = forwardRef(({ styles, initialViewState, children, className, onLoad }, ref) => {
   const containerRef = useRef(null);
   const mapInstanceRef = useRef(null);
+  const resizeObserverRef = useRef(null);
   const [mapLoaded, setMapLoaded] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     // Inject MapLibre GL JS & CSS
     if (!document.getElementById('maplibre-css')) {
       const link = document.createElement('link');
@@ -16,18 +19,8 @@ export const Map = forwardRef(({ styles, initialViewState, children, className, 
       document.head.appendChild(link);
     }
 
-    if (!window.maplibregl && !document.getElementById('maplibre-js')) {
-      const script = document.createElement('script');
-      script.id = 'maplibre-js';
-      script.src = 'https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js';
-      script.onload = () => initMap();
-      document.head.appendChild(script);
-    } else if (window.maplibregl) {
-      initMap();
-    }
-
     function initMap() {
-      if (mapInstanceRef.current || !containerRef.current) return;
+      if (cancelled || mapInstanceRef.current || !containerRef.current || !window.maplibregl) return;
 
       const map = new window.maplibregl.Map({
         container: containerRef.current,
@@ -41,14 +34,36 @@ export const Map = forwardRef(({ styles, initialViewState, children, className, 
       map.addControl(new window.maplibregl.FullscreenControl(), 'top-right');
 
       mapInstanceRef.current = map;
-      
+
+      resizeObserverRef.current = new ResizeObserver(() => {
+        map.resize();
+      });
+      resizeObserverRef.current.observe(containerRef.current);
+
       map.on('load', () => {
+        map.resize();
         setMapLoaded(true);
-        if (onLoad) onLoad(map);
+        map.once('idle', () => {
+          map.resize();
+          if (onLoad) onLoad(map);
+        });
       });
     }
 
+    if (!window.maplibregl && !document.getElementById('maplibre-js')) {
+      const script = document.createElement('script');
+      script.id = 'maplibre-js';
+      script.src = 'https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js';
+      script.onload = () => initMap();
+      document.head.appendChild(script);
+    } else if (window.maplibregl) {
+      initMap();
+    }
+
     return () => {
+      cancelled = true;
+      resizeObserverRef.current?.disconnect();
+      resizeObserverRef.current = null;
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
