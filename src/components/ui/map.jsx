@@ -50,6 +50,8 @@ export const Map = forwardRef(({ styles, initialViewState, children, className, 
       });
     }
 
+    let scriptToListen = null;
+
     if (!window.maplibregl && !document.getElementById('maplibre-js')) {
       const script = document.createElement('script');
       script.id = 'maplibre-js';
@@ -58,10 +60,18 @@ export const Map = forwardRef(({ styles, initialViewState, children, className, 
       document.head.appendChild(script);
     } else if (window.maplibregl) {
       initMap();
+    } else {
+      scriptToListen = document.getElementById('maplibre-js');
+      if (scriptToListen) {
+        scriptToListen.addEventListener('load', initMap);
+      }
     }
 
     return () => {
       cancelled = true;
+      if (scriptToListen) {
+        scriptToListen.removeEventListener('load', initMap);
+      }
       resizeObserverRef.current?.disconnect();
       resizeObserverRef.current = null;
       if (mapInstanceRef.current) {
