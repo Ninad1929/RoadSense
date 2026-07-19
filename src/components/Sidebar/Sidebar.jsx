@@ -20,13 +20,13 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, isMobileOpen, set
     >
       {/* Logo */}
       <div className={`flex items-center border-b border-slate-700/60 ${showLabels ? 'gap-3 px-5 py-5' : 'justify-center px-3 py-5'}`}>
-        <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-[#2563EB] flex items-center justify-center shadow-lg shadow-blue-600/20">
-          <MapPin className="w-[18px] h-[18px] text-white" />
+        <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-lg overflow-hidden">
+          <img src="/logo.jpg" alt="Logo" className="w-full h-full object-contain" />
         </div>
         {showLabels && (
           <div className="overflow-hidden min-w-0">
             <h1 className="text-[15px] font-semibold text-white tracking-wide leading-tight">
-              SPOTHOLES
+              RoadSense
             </h1>
             <p className="text-[10px] text-slate-400 font-medium tracking-wide uppercase mt-0.5">
               Road Monitoring

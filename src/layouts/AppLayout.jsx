@@ -32,7 +32,7 @@ export default function AppLayout() {
 
         <footer className="border-t border-[#E2E8F0] bg-white px-6 py-4 mt-auto">
           <p className="text-xs text-slate-400 text-center font-medium">
-            © 2026 SPOTHOLES — IoT-Based Road Health Monitoring System
+            © 2026 RoadSense — IoT-Based Road Health Monitoring System
           </p>
         </footer>
       </div>

@@ -13,7 +13,7 @@ function buildPopupHtml(report, latitude, longitude) {
 
   return `
     <div style="font-family: 'Inter', sans-serif; padding: 4px; min-width: 200px;">
-      <h4 style="margin: 0 0 8px 0; font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">SPOTHOLES</h4>
+      <h4 style="margin: 0 0 8px 0; font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">RoadSense</h4>
       <h3 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 700; color: #0f172a;">${report.roadName}</h3>
       
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; font-size: 12px;">
