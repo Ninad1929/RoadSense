@@ -6,6 +6,7 @@ import Reports from './pages/Reports';
 import Analytics from './pages/Analytics';
 import ExportData from './pages/ExportData';
 import Settings from './pages/Settings';
+import ImuTest from './pages/ImuTest';
 
 export default function App() {
   return (
@@ -13,6 +14,7 @@ export default function App() {
       <Routes>
         <Route element={<AppLayout />}>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/imu-test" element={<ImuTest />} />
           <Route path="/live-monitoring" element={<LiveMonitoring />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/analytics" element={<Analytics />} />

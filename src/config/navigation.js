@@ -5,6 +5,7 @@ import {
   BarChart3,
   Download,
   Settings,
+  Cpu,
 } from 'lucide-react';
 
 export const navItems = [
@@ -15,6 +16,14 @@ export const navItems = [
     title: 'Dashboard',
     subtitle: 'Real-time road health monitoring overview',
     icon: LayoutDashboard,
+  },
+  {
+    id: 'imu-test',
+    path: '/imu-test',
+    label: 'IMU Test',
+    title: 'IMU Test',
+    subtitle: 'Live Accelerometer & Gyroscope hardware integration',
+    icon: Cpu,
   },
   {
     id: 'monitoring',

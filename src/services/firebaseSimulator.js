@@ -1,8 +1,7 @@
-import { db } from "./firebase.ts";
-import { collection, addDoc, Timestamp } from "firebase/firestore";
+import { db } from "./firebase";
+import { ref, push } from "firebase/database";
 
-const ENABLE_SIMULATOR = true; // Change to false to disable
-
+const ENABLE_SIMULATOR = true;
 const INTERVAL = 4000;
 
 const devices = [
@@ -48,8 +47,7 @@ async function uploadRoadData() {
       : "Poor";
 
   const data = {
-    deviceId:
-      devices[Math.floor(Math.random() * devices.length)],
+    deviceId: devices[Math.floor(Math.random() * devices.length)],
 
     roadName: road.name,
 
@@ -75,19 +73,23 @@ async function uploadRoadData() {
 
     speed: Math.floor(rand(20, 60)),
 
-    timestamp: Timestamp.now(),
+    timestamp: Date.now(),
   };
 
-  await addDoc(collection(db, "roadReports"), data);
+  try {
+    await push(ref(db, "roadReports"), data);
 
-  console.log("Uploaded:", data);
+    console.log("Uploaded:", data);
+  } catch (err) {
+    console.error("Upload failed:", err);
+  }
 }
 
 export function startFirebaseSimulator() {
   if (!ENABLE_SIMULATOR) return;
 
   console.log("=================================");
-  console.log("Firebase Simulator Started");
+  console.log("Realtime Database Simulator Started");
   console.log("=================================");
 
   uploadRoadData();

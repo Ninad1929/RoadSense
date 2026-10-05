@@ -1,0 +1,171 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: roadReports
+    // Document ID: auto-generated or custom reportId
+    // Fields:
+    //   - deviceId: string (required, length 1-100) - Telemetry device identifier
+    //   - roadName: string (required, length 1-200) - Name/Location of road
+    //   - latitude: number (required, -90.0 to 90.0) - Latitude coordinate
+    //   - longitude: number (required, -180.0 to 180.0) - Longitude coordinate
+    //   - condition: string (required, enum: ['Good', 'Moderate', 'Poor']) - Surface status
+    //   - confidence: number (required, 0 to 100) - AI detection confidence score
+    //   - timestamp: number or timestamp (required) - Event detection timestamp
+    //   - accelerometer: map (optional, keys: x, y, z as numbers) - 3-axis accelerometer vector
+    //   - gyroscope: map (optional, keys: x, y, z as numbers) - 3-axis gyroscope vector
+    //   - speed: number (optional, 0 to 300) - Vehicle speed in km/h
+    //   - battery: number (optional, 0 to 100) - Device battery percentage
+    //   - userId: string (optional, UID of reporter/inspector)
+    //
+    // Collection: users
+    // Document ID: userId (matches auth.uid)
+    // Fields:
+    //   - name: string (required, length 1-100) - User full name
+    //   - email: string (required, valid email format) - Contact email address
+    //   - role: string (required, enum: ['admin', 'inspector', 'user']) - System authorization role
+    //   - createdAt: timestamp (required, immutable) - Account creation time
+    //   - photoURL: string (optional, length 1-500) - Profile picture URL
+    //
+    // ===============================================================
+
+    // Default deny all access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+             (request.auth.token.role == 'admin' ||
+              (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function validStringLength(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+             request.resource.data[field].size() >= minLen &&
+             request.resource.data[field].size() <= maxLen;
+    }
+
+    function isValidOptionalString(field, minLen, maxLen) {
+      return !(field in request.resource.data) ||
+             (request.resource.data[field] is string &&
+              request.resource.data[field].size() >= minLen &&
+              request.resource.data[field].size() <= maxLen);
+    }
+
+    function isValidEmail(email) {
+      return email is string &&
+             email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    function isValidVector(sensorData) {
+      return sensorData is map &&
+             sensorData.keys().hasOnly(['x', 'y', 'z']) &&
+             sensorData.x is number &&
+             sensorData.y is number &&
+             sensorData.z is number;
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidRoadReport(data) {
+      return hasRequiredFields(['deviceId', 'roadName', 'latitude', 'longitude', 'condition', 'confidence', 'timestamp']) &&
+             hasOnlyAllowedFields(['deviceId', 'roadName', 'latitude', 'longitude', 'condition', 'confidence', 'timestamp', 'accelerometer', 'gyroscope', 'speed', 'battery', 'userId']) &&
+             validStringLength('deviceId', 1, 100) &&
+             validStringLength('roadName', 1, 200) &&
+             data.latitude is number && data.latitude >= -90.0 && data.latitude <= 90.0 &&
+             data.longitude is number && data.longitude >= -180.0 && data.longitude <= 180.0 &&
+             data.condition in ['Good', 'Moderate', 'Poor'] &&
+             data.confidence is number && data.confidence >= 0 && data.confidence <= 100 &&
+             (data.timestamp is number || data.timestamp is timestamp) &&
+             (!('accelerometer' in data) || isValidVector(data.accelerometer)) &&
+             (!('gyroscope' in data) || isValidVector(data.gyroscope)) &&
+             (!('speed' in data) || (data.speed is number && data.speed >= 0 && data.speed <= 300)) &&
+             (!('battery' in data) || (data.battery is number && data.battery >= 0 && data.battery <= 100)) &&
+             (!('userId' in data) || isValidOptionalString('userId', 1, 128));
+    }
+
+    function isValidUser(data) {
+      return hasRequiredFields(['name', 'email', 'role', 'createdAt']) &&
+             hasOnlyAllowedFields(['name', 'email', 'role', 'createdAt', 'photoURL']) &&
+             validStringLength('name', 1, 100) &&
+             isValidEmail(data.email) &&
+             data.role in ['admin', 'inspector', 'user'] &&
+             data.createdAt is timestamp &&
+             isValidOptionalString('photoURL', 1, 500);
+    }
+
+    // ===============================================================
+    // Collections & Rules
+    // ===============================================================
+
+    // Road Reports Collection
+    match /roadReports/{reportId} {
+      // Authenticated users can view road reports
+      allow read: if isAuthenticated();
+
+      // Authenticated users/devices can create valid road reports
+      allow create: if isAuthenticated() &&
+                       isValidRoadReport(request.resource.data) &&
+                       (!('userId' in request.resource.data) || request.resource.data.userId == request.auth.uid);
+
+      // Report owner or Admin can update reports, maintaining schema & immutable fields
+      allow update: if isAuthenticated() &&
+                       isValidRoadReport(request.resource.data) &&
+                       (isAdmin() || (resource.data.userId == request.auth.uid && request.resource.data.userId == resource.data.userId)) &&
+                       areImmutableFieldsUnchanged(['deviceId', 'timestamp']);
+
+      // Only admin or owner can delete report
+      allow delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+    }
+
+    // Users Collection (PII Protection - Owner / Admin read only)
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+
+      allow create: if isAuthenticated() &&
+                       isOwner(userId) &&
+                       isValidUser(request.resource.data) &&
+                       (request.resource.data.role == 'user' || request.resource.data.role == 'inspector' || isAdmin());
+
+      allow update: if isAuthenticated() &&
+                       isValidUser(request.resource.data) &&
+                       ((isOwner(userId) && request.resource.data.role == resource.data.role) || isAdmin()) &&
+                       areImmutableFieldsUnchanged(['createdAt']);
+
+      allow delete: if isAdmin();
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "rules": {
+    "roadReports": {
+      ".read": "auth != null",
+      "$reportId": {
+        ".write": "auth != null && (!data.exists() || data.child('userId').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin')",
+        ".validate": "newData.hasChildren(['deviceId', 'roadName', 'latitude', 'longitude', 'condition', 'confidence', 'timestamp']) && newData.child('deviceId').isString() && newData.child('roadName').isString() && newData.child('latitude').isNumber() && newData.child('longitude').isNumber() && (newData.child('condition').val() === 'Good' || newData.child('condition').val() === 'Moderate' || newData.child('condition').val() === 'Poor') && newData.child('confidence').isNumber()"
+      }
+    },
+    "users": {
+      "$userId": {
+        ".read": "auth != null && (auth.uid === $userId || root.child('users').child(auth.uid).child('role').val() === 'admin')",
+        ".write": "auth != null && (auth.uid === $userId || root.child('users').child(auth.uid).child('role').val() === 'admin')"
+      }
+    },
+    "imuTest": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}
