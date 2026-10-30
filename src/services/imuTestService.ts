@@ -1,6 +1,7 @@
 import { ref, onValue, set } from "firebase/database";
 import { db } from "./firebase";
 import { ImuDataPayload, ImuSensorVector } from "../types/ImuTest";
+import type { GpsRawPayload } from "../types/GpsTest";
 
 export const IMU_TEST_PATH = "imuTest/latest";
 
@@ -21,6 +22,13 @@ function parseVector(val: unknown): ImuSensorVector | undefined {
   };
 }
 
+function parseGpsRaw(val: unknown): GpsRawPayload | undefined {
+  if (!val || typeof val !== "object") return undefined;
+  const obj = val as Record<string, unknown>;
+  if (typeof obj.nmea !== "string") return undefined;
+  return { nmea: obj.nmea };
+}
+
 export function parseImuPayload(raw: unknown): ImuDataPayload | null {
   if (!raw || typeof raw !== "object") return null;
 
@@ -31,6 +39,7 @@ export function parseImuPayload(raw: unknown): ImuDataPayload | null {
     timestamp: typeof data.timestamp === "number" || typeof data.timestamp === "string" ? data.timestamp : undefined,
     accelerometer: parseVector(data.accelerometer),
     gyroscope: parseVector(data.gyroscope),
+    gps: parseGpsRaw(data.gps),
   };
 }
 
@@ -101,6 +110,9 @@ export async function sendManualImuTestData(customPayload?: Partial<ImuDataPaylo
       x: 0.01,
       y: -0.02,
       z: 0.00,
+    },
+    gps: customPayload?.gps || {
+      nmea: "$GPGGA,123519,1904.1234,N,07252.5678,E,1,08,0.9,10.0,M,0.0,M,,*49",
     },
   };
 

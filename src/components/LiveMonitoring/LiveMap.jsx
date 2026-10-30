@@ -50,11 +50,16 @@ function buildPopupHtml(report) {
 
 function createMarkerElement(report, isNew) {
   const el = document.createElement('div');
-  el.className = isNew ? 'live-map-marker marker-appear' : 'live-map-marker';
-  el.style.position = 'relative';
+  el.className = 'live-map-marker-container';
   el.style.width = '18px';
   el.style.height = '18px';
   el.style.cursor = 'pointer';
+
+  const inner = document.createElement('div');
+  inner.className = isNew ? 'live-map-marker marker-appear' : 'live-map-marker';
+  inner.style.position = 'relative';
+  inner.style.width = '100%';
+  inner.style.height = '100%';
 
   const isPoor = report.condition === 'Poor';
   const color = conditionColors[report.condition] || '#2563EB';
@@ -68,7 +73,7 @@ function createMarkerElement(report, isNew) {
   dot.style.boxShadow = '0 2px 6px rgba(0,0,0,0.35)';
   dot.style.position = 'relative';
   dot.style.zIndex = '2';
-  el.appendChild(dot);
+  inner.appendChild(dot);
 
   if (isPoor) {
     const pulse = document.createElement('div');
@@ -79,9 +84,11 @@ function createMarkerElement(report, isNew) {
     pulse.style.backgroundColor = color;
     pulse.style.opacity = '0.5';
     pulse.style.animation = 'pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite';
-    el.appendChild(pulse);
+    pulse.style.pointerEvents = 'none';
+    inner.appendChild(pulse);
   }
 
+  el.appendChild(inner);
   return el;
 }
 
@@ -203,6 +210,12 @@ export default function LiveMap({ reports }) {
       }
       .marker-appear { animation: marker-appear 0.5s ease-out forwards; }
       .marker-updated { animation: marker-updated 0.6s ease-out; }
+      .maplibregl-marker {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        will-change: transform !important;
+      }
       .maplibregl-popup-content {
         border-radius: 12px !important;
         box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1) !important;

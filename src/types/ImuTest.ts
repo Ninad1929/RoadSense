@@ -1,3 +1,5 @@
+import type { GpsRawPayload } from "./GpsTest";
+
 export interface ImuSensorVector {
   x?: number | null;
   y?: number | null;
@@ -9,4 +11,5 @@ export interface ImuDataPayload {
   timestamp?: number | string;
   accelerometer?: ImuSensorVector;
   gyroscope?: ImuSensorVector;
+  gps?: GpsRawPayload;
 }

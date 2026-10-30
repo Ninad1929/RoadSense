@@ -11,7 +11,9 @@ import {
   Send,
   RefreshCw,
   Compass,
-  ArrowUpRight
+  ArrowUpRight,
+  MapPin,
+  ChevronDown,
 } from 'lucide-react';
 import {
   subscribeToImuTest,
@@ -19,6 +21,7 @@ import {
   sendManualImuTestData,
   IMU_TEST_PATH,
 } from '../services/imuTestService';
+import { processGpsPayload } from '../services/gpsTestService';
 
 const STALE_THRESHOLD_MS = 6000; // If no update in 6s, mark as stale
 
@@ -30,6 +33,7 @@ export default function ImuTest() {
   const [lastPacketReceivedAt, setLastPacketReceivedAt] = useState(null);
   const [now, setNow] = useState(Date.now());
   const [showRawJson, setShowRawJson] = useState(false);
+  const [showRawNmea, setShowRawNmea] = useState(false);
   const [isSendingSample, setIsSendingSample] = useState(false);
   const [sampleFeedback, setSampleFeedback] = useState(null);
 
@@ -105,6 +109,15 @@ export default function ImuTest() {
     }
   }, [data?.timestamp]);
 
+  // Parse GPS NMEA data from the live payload
+  const gpsResult = useMemo(() => {
+    if (!data?.gps) return null;
+    return processGpsPayload(data.gps);
+  }, [data?.gps]);
+
+  const rawNmea = data?.gps?.nmea || null;
+  const hasGpsData = rawNmea !== null && rawNmea !== '';
+
   // Handler to push test packet manually for integration test validation
   const handleSendTestSample = async () => {
     setIsSendingSample(true);
@@ -122,6 +135,9 @@ export default function ImuTest() {
           x: Number((Math.random() * 0.2 - 0.1).toFixed(3)),
           y: Number((Math.random() * 0.2 - 0.1).toFixed(3)),
           z: Number((Math.random() * 0.2 - 0.1).toFixed(3)),
+        },
+        gps: {
+          nmea: '$GPGGA,123519,1904.1234,N,07252.5678,E,1,08,0.9,10.0,M,0.0,M,,*49',
         },
       });
       setSampleFeedback('Sample frame sent to Firebase successfully!');
@@ -491,6 +507,175 @@ export default function ImuTest() {
         </div>
       )}
 
+      {/* GPS COORDINATES SECTION */}
+      <div className="rounded-2xl bg-white border border-[#E2E8F0] card-shadow overflow-hidden">
+        <div className="px-6 py-4 border-b border-[#E2E8F0] bg-slate-50/50 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
+              <MapPin className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-slate-800">GPS COORDINATES</h2>
+              <p className="text-xs text-slate-400 font-medium">NEO-6M → STM32 → ESP32 → Firebase → NMEA Parser</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {/* GPS Stream Status Badge */}
+            {!hasGpsData ? (
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-500 border border-slate-200 uppercase flex items-center gap-1">
+                <RefreshCw className="w-3 h-3 animate-spin" />
+                Waiting
+              </span>
+            ) : gpsResult?.hasFix ? (
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200 uppercase flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 pulse-dot" />
+                Fix · Live
+              </span>
+            ) : (
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-600 border border-amber-200 uppercase flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3" />
+                No Fix
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="p-6">
+          {!hasGpsData ? (
+            /* Waiting state — no GPS data from Firebase yet */
+            <div className="py-10 text-center">
+              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400 mb-3 animate-pulse">
+                <MapPin className="w-6 h-6" />
+              </div>
+              <p className="text-sm font-semibold text-slate-600">Waiting for GPS data...</p>
+              <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+                GPS data will appear here once the ESP32 pushes an NMEA sentence to <code className="text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded">/{IMU_TEST_PATH}/gps/nmea</code>.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-5">
+              {/* GPS Coordinate + Fix Status Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* GPS Fix Status */}
+                <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 text-center hover:border-emerald-300 transition-colors">
+                  <span className="inline-block px-2 py-0.5 rounded text-[11px] font-bold uppercase bg-emerald-600 text-white mb-2 shadow-sm">
+                    GPS Fix
+                  </span>
+                  <div className="text-xl font-mono font-bold mt-1">
+                    {gpsResult === null ? (
+                      <span className="text-amber-500">Parse Error</span>
+                    ) : gpsResult.hasFix ? (
+                      <span className="text-emerald-600">Fix ✓</span>
+                    ) : (
+                      <span className="text-red-500">No Fix</span>
+                    )}
+                  </div>
+                  {gpsResult?.sentenceType && (
+                    <p className="text-[10px] text-slate-400 mt-1 font-mono">{gpsResult.sentenceType}</p>
+                  )}
+                </div>
+
+                {/* Latitude */}
+                <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 text-center hover:border-blue-300 transition-colors">
+                  <span className="inline-block px-2 py-0.5 rounded text-[11px] font-bold uppercase bg-blue-600 text-white mb-2 shadow-sm">
+                    Latitude
+                  </span>
+                  <div className="text-xl lg:text-2xl font-mono font-bold mt-1 text-slate-800">
+                    {gpsResult?.hasFix ? (
+                      <>{gpsResult.latitude.toFixed(7)}°</>
+                    ) : (
+                      <span className="text-slate-400">—</span>
+                    )}
+                  </div>
+                  {gpsResult?.hasFix && (
+                    <p className="text-[10px] text-slate-400 mt-1">{gpsResult.latitude >= 0 ? 'N' : 'S'}</p>
+                  )}
+                </div>
+
+                {/* Longitude */}
+                <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 text-center hover:border-teal-300 transition-colors">
+                  <span className="inline-block px-2 py-0.5 rounded text-[11px] font-bold uppercase bg-teal-600 text-white mb-2 shadow-sm">
+                    Longitude
+                  </span>
+                  <div className="text-xl lg:text-2xl font-mono font-bold mt-1 text-slate-800">
+                    {gpsResult?.hasFix ? (
+                      <>{gpsResult.longitude.toFixed(7)}°</>
+                    ) : (
+                      <span className="text-slate-400">—</span>
+                    )}
+                  </div>
+                  {gpsResult?.hasFix && (
+                    <p className="text-[10px] text-slate-400 mt-1">{gpsResult.longitude >= 0 ? 'E' : 'W'}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Extra info row (satellites, altitude, speed, utc) */}
+              {gpsResult?.hasFix && (
+                <div className="flex flex-wrap gap-3 text-xs text-slate-500">
+                  {gpsResult.satelliteCount !== undefined && (
+                    <span className="px-2 py-1 rounded-md bg-slate-100 border border-slate-200 font-mono">
+                      Satellites: {gpsResult.satelliteCount}
+                    </span>
+                  )}
+                  {gpsResult.altitude !== undefined && (
+                    <span className="px-2 py-1 rounded-md bg-slate-100 border border-slate-200 font-mono">
+                      Altitude: {gpsResult.altitude}m
+                    </span>
+                  )}
+                  {gpsResult.speedKnots !== undefined && (
+                    <span className="px-2 py-1 rounded-md bg-slate-100 border border-slate-200 font-mono">
+                      Speed: {gpsResult.speedKnots} kn
+                    </span>
+                  )}
+                  {gpsResult.utcTime && (
+                    <span className="px-2 py-1 rounded-md bg-slate-100 border border-slate-200 font-mono">
+                      UTC: {gpsResult.utcTime}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Raw NMEA Debug Area (expandable) */}
+              <div className="rounded-xl border border-slate-200 bg-slate-50/50 overflow-hidden">
+                <button
+                  onClick={() => setShowRawNmea(!showRawNmea)}
+                  className="w-full px-4 py-2.5 flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider hover:bg-slate-100 transition-colors"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Terminal className="w-3.5 h-3.5" />
+                    Raw NMEA (Debug)
+                  </span>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${showRawNmea ? 'rotate-180' : ''}`} />
+                </button>
+                {showRawNmea && (
+                  <div className="px-4 pb-3">
+                    <pre className="bg-slate-900 text-emerald-400 text-xs font-mono p-3 rounded-lg overflow-x-auto border border-slate-800">
+                      {rawNmea || '// No NMEA data'}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="px-6 py-3 bg-slate-50/60 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+          <span>NMEA parsed client-side</span>
+          <span className="flex items-center gap-1.5">
+            GPS Stream:
+            {hasGpsData ? (
+              <span className="text-emerald-600 font-semibold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 pulse-dot" />
+                Live
+              </span>
+            ) : (
+              <span className="text-slate-400 font-medium">Waiting</span>
+            )}
+          </span>
+        </div>
+      </div>
+
       {/* ESP32 / STM32 Hardware Verification Guide */}
       <div className="rounded-xl bg-slate-100 border border-slate-200/80 p-5">
         <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
@@ -501,7 +686,10 @@ export default function ImuTest() {
             <strong>ESP32 Target Firebase Path:</strong> Write using HTTP PUT/PATCH or Firebase SDK to <code className="bg-white px-1.5 py-0.5 rounded border border-slate-200 font-mono text-slate-800">/imuTest/latest.json</code>.
           </li>
           <li>
-            <strong>Data Structure:</strong> Expects JSON object with fields <code className="font-mono text-slate-800">deviceId</code>, <code className="font-mono text-slate-800">timestamp</code>, <code className="font-mono text-slate-800">accelerometer: &#123; x, y, z &#125;</code>, and <code className="font-mono text-slate-800">gyroscope: &#123; x, y, z &#125;</code>.
+            <strong>Data Structure:</strong> Expects JSON object with fields <code className="font-mono text-slate-800">deviceId</code>, <code className="font-mono text-slate-800">timestamp</code>, <code className="font-mono text-slate-800">accelerometer: &#123; x, y, z &#125;</code>, <code className="font-mono text-slate-800">gyroscope: &#123; x, y, z &#125;</code>, and <code className="font-mono text-slate-800">gps: &#123; nmea: "..." &#125;</code>.
+          </li>
+          <li>
+            <strong>GPS Data Flow:</strong> NEO-6M outputs raw NMEA → STM32 forwards raw NMEA → ESP32 uploads raw NMEA to <code className="font-mono text-slate-800">/imuTest/latest/gps/nmea</code>. All coordinate parsing happens client-side.
           </li>
           <li>
             <strong>Simulator Isolation:</strong> The existing background simulator writes to <code className="font-mono text-slate-800">/roadReports</code> and does NOT interfere with this test endpoint.
