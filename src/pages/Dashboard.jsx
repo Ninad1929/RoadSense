@@ -1,12 +1,14 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import StatCards from '../components/Dashboard/StatCards';
 import MapView from '../components/Map/MapView';
 import LiveFeed from '../components/LiveFeed/LiveFeed';
+import PotholeDetail from '../components/LiveFeed/PotholeDetail';
 import ReportsTable from '../components/Reports/ReportsTable';
 import { subscribeToRoadReports } from '../services/roadReportService';
 
 export default function Dashboard() {
   const [reports, setReports] = useState([]);
+  const [selectedReports, setSelectedReports] = useState(null); // reports at a clicked point/cluster
 
   useEffect(() => {
     let isMounted = true;
@@ -52,6 +54,14 @@ export default function Dashboard() {
     };
   }, [reports]);
 
+  const handlePointSelect = useCallback((pointReports) => {
+    setSelectedReports(pointReports);
+  }, []);
+
+  const handleCloseDetail = useCallback(() => {
+    setSelectedReports(null);
+  }, []);
+
   return (
     <>
       <section>
@@ -60,10 +70,14 @@ export default function Dashboard() {
 
       <section className="grid grid-cols-1 lg:grid-cols-10 gap-6 min-h-[480px] lg:min-h-[520px]">
         <div className="lg:col-span-7 h-[400px] lg:h-full min-h-0">
-          <MapView reports={reports} />
+          <MapView reports={reports} onPointSelect={handlePointSelect} />
         </div>
         <div className="lg:col-span-3 h-[400px] lg:h-full min-h-0">
-          <LiveFeed feedData={reports} />
+          {selectedReports ? (
+            <PotholeDetail reports={selectedReports} onClose={handleCloseDetail} />
+          ) : (
+            <LiveFeed feedData={reports} />
+          )}
         </div>
       </section>
 

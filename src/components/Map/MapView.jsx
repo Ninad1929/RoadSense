@@ -204,12 +204,18 @@ function getClusterLeaves(index, clusterId, totalCount) {
 
 /* ─── Component ──────────────────────────────────────────────────────── */
 
-export default function MapView({ reports }) {
+export default function MapView({ reports, onPointSelect }) {
   const containerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef(new Map()); // string key → { marker, pointCount, worstCondition, isCluster }
   const indexRef = useRef(null);        // Supercluster instance
   const rafRef = useRef(null);
+  const onPointSelectRef = useRef(onPointSelect);
+
+  // Keep the callback ref fresh
+  useEffect(() => {
+    onPointSelectRef.current = onPointSelect;
+  }, [onPointSelect]);
 
   /**
    * Build / rebuild the Supercluster index whenever reports change.
@@ -324,7 +330,7 @@ export default function MapView({ reports }) {
         .setPopup(popup)
         .addTo(map);
 
-      // On cluster click → zoom in to expand that cluster
+      // On cluster click → zoom in to expand, OR select if at max expansion
       if (isCluster) {
         el.addEventListener('click', (e) => {
           if (e.detail > 1) return;
@@ -335,9 +341,27 @@ export default function MapView({ reports }) {
               currentIndex.getClusterExpansionZoom(props.cluster_id),
               18
             );
-            map.flyTo({ center: lngLat, zoom: expansionZoom, duration: 500 });
+            const currentZoom = map.getZoom();
+
+            // If already at or beyond expansion zoom, this cluster can't expand further
+            // → treat it as a "max expanded" point and fire onPointSelect
+            if (currentZoom >= expansionZoom || expansionZoom >= 18) {
+              const childReports = getClusterLeaves(currentIndex, props.cluster_id, pointCount);
+              if (childReports.length > 0 && onPointSelectRef.current) {
+                onPointSelectRef.current(childReports);
+              }
+            } else {
+              map.flyTo({ center: lngLat, zoom: expansionZoom, duration: 500 });
+            }
           } catch {
             map.flyTo({ center: lngLat, zoom: map.getZoom() + 2, duration: 500 });
+          }
+        });
+      } else {
+        // Single point click → fire onPointSelect
+        el.addEventListener('click', () => {
+          if (onPointSelectRef.current) {
+            onPointSelectRef.current([props.reportData]);
           }
         });
       }

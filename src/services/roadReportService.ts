@@ -68,6 +68,8 @@ function mapRealtimeData(id: string, data: any): RoadReport {
     speed: data.speed,
 
     battery: data.battery,
+
+    imageUrl: data.imageUrl || data.image_url || data.cloudinaryUrl || "",
   };
 }
 

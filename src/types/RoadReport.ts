@@ -15,6 +15,7 @@ export interface RoadReport {
   gyroscope?: SensorVector;
   speed?: number;
   battery?: number;
+  imageUrl?: string;
 }
 
 export interface LiveMonitoringSummary {
