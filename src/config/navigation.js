@@ -5,7 +5,7 @@ import {
   BarChart3,
   Download,
   Settings,
-  Cpu,
+  FlaskConical,
 } from 'lucide-react';
 
 export const navItems = [
@@ -18,12 +18,12 @@ export const navItems = [
     icon: LayoutDashboard,
   },
   {
-    id: 'imu-test',
-    path: '/imu-test',
-    label: 'IMU Test',
-    title: 'IMU Test',
-    subtitle: 'Live Accelerometer & Gyroscope hardware integration',
-    icon: Cpu,
+    id: 'test',
+    path: '/test',
+    label: 'Test',
+    title: 'Test',
+    subtitle: 'Simulate and push test road reports to Firebase',
+    icon: FlaskConical,
   },
   {
     id: 'monitoring',

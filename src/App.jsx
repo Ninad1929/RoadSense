@@ -14,6 +14,7 @@ export default function App() {
       <Routes>
         <Route element={<AppLayout />}>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/test" element={<ImuTest />} />
           <Route path="/imu-test" element={<ImuTest />} />
           <Route path="/live-monitoring" element={<LiveMonitoring />} />
           <Route path="/reports" element={<Reports />} />
