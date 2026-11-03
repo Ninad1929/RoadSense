@@ -69,7 +69,7 @@ function mapRealtimeData(id: string, data: any): RoadReport {
 
     battery: data.battery,
 
-    imageUrl: data.imageUrl || data.image_url || data.cloudinaryUrl || "",
+    imageUrl: data.imageUrl,
   };
 }
 
