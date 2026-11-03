@@ -1,5 +1,8 @@
-import { Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Download } from 'lucide-react';
 import { formatReportTimestamp } from '../../utils/roadReport';
+import { sortReportsNewestFirst } from '../../utils/liveMonitoring';
+import { downloadReports } from '../../utils/exportReports';
 
 const conditionBadge = {
   Poor: 'bg-red-50 text-[#DC2626] border-red-100',
@@ -8,15 +11,29 @@ const conditionBadge = {
 };
 
 export default function ReportsTable({ reports }) {
-  const totalPages = Math.max(1, Math.ceil(reports.length / 10));
+  const [showAll, setShowAll] = useState(false);
+  const sortedReports = useMemo(() => sortReportsNewestFirst(reports), [reports]);
+  const visibleReports = showAll ? sortedReports : sortedReports.slice(0, 30);
 
   return (
     <div className="rounded-xl bg-white border border-[#E2E8F0] card-shadow overflow-hidden">
-      <div className="px-6 py-5 border-b border-[#E2E8F0]">
-        <h3 className="text-sm font-semibold text-[#334155]">Latest Road Reports</h3>
-        <p className="text-xs text-slate-400 font-medium mt-0.5">
-          {reports.length} total report{reports.length !== 1 ? 's' : ''} recorded
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-5 border-b border-[#E2E8F0]">
+        <div>
+          <h3 className="text-sm font-semibold text-[#334155]">Latest Road Reports</h3>
+          <p className="text-xs text-slate-400 font-medium mt-0.5">
+            {reports.length} total report{reports.length !== 1 ? 's' : ''} recorded
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => downloadReports(sortedReports)}
+          disabled={reports.length === 0}
+          title="Download all readings as an Excel workbook"
+          className="inline-flex items-center gap-2 rounded-lg bg-[#2563EB] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#1D4ED8] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <Download className="w-4 h-4" />
+          Download sheet
+        </button>
       </div>
 
       <div className="overflow-x-auto">
@@ -44,7 +61,7 @@ export default function ReportsTable({ reports }) {
             </tr>
           </thead>
           <tbody>
-            {reports.map((report, index) => (
+            {visibleReports.map((report, index) => (
               <tr
                 key={report.id}
                 className={`border-b border-[#E2E8F0] last:border-b-0
@@ -71,43 +88,34 @@ export default function ReportsTable({ reports }) {
                   {formatReportTimestamp(report.timestamp)}
                 </td>
                 <td className="px-6 py-4 text-right whitespace-nowrap">
-                  <button className="p-2 rounded-lg border border-[#E2E8F0] bg-white hover:bg-[#F8FAFC] text-slate-400 hover:text-[#334155] transition-all duration-200 inline-flex items-center justify-center">
+                  <button type="button" onClick={() => downloadReports([report])} aria-label={`Download reading for ${report.roadName || 'Unknown Road'}`} className="p-2 rounded-lg border border-[#E2E8F0] bg-white hover:bg-[#F8FAFC] text-slate-400 hover:text-[#334155] transition-all duration-200 inline-flex items-center justify-center">
                     <Download className="w-4 h-4" />
                   </button>
                 </td>
               </tr>
             ))}
+            {reports.length === 0 && (
+              <tr><td colSpan={6} className="px-6 py-10 text-center text-sm text-slate-400">No readings recorded yet.</td></tr>
+            )}
           </tbody>
         </table>
       </div>
 
-      <div className="flex items-center justify-between px-6 py-4 border-t border-[#E2E8F0] bg-[#F8FAFC]/50">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-t border-[#E2E8F0] bg-[#F8FAFC]/50">
         <p className="text-xs text-slate-400 font-medium">
-          Showing <span className="text-[#334155] font-semibold">{reports.length}</span> of{' '}
+          Showing <span className="text-[#334155] font-semibold">{visibleReports.length}</span> of{' '}
           <span className="text-[#334155] font-semibold">{reports.length}</span> reports
         </p>
-        <div className="flex items-center gap-1">
+        {reports.length > 30 && (
           <button
-            className="p-2 rounded-lg border border-[#E2E8F0] bg-white text-slate-400 hover:text-[#334155] hover:bg-white transition-all duration-200 disabled:opacity-40"
-            disabled
+            type="button"
+            onClick={() => setShowAll((current) => !current)}
+            aria-expanded={showAll}
+            className="px-4 py-2 rounded-lg border border-[#E2E8F0] bg-white text-xs font-semibold text-[#2563EB] hover:bg-blue-50 transition-colors"
           >
-            <ChevronLeft className="w-4 h-4" />
+            {showAll ? 'Show less' : `Show more (${reports.length - 30} older readings)`}
           </button>
-          <span className="px-3 py-1.5 text-xs font-semibold text-[#2563EB] bg-blue-50 border border-blue-100 rounded-lg">
-            1
-          </span>
-          {totalPages > 1 && (
-            <span className="px-3 py-1.5 text-xs font-medium text-slate-400">
-              of {totalPages}
-            </span>
-          )}
-          <button
-            className="p-2 rounded-lg border border-[#E2E8F0] bg-white text-slate-400 hover:text-[#334155] hover:bg-white transition-all duration-200 disabled:opacity-40"
-            disabled={totalPages <= 1}
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
+        )}
       </div>
     </div>
   );
