@@ -68,11 +68,11 @@ export default function Dashboard() {
         <StatCards statistics={statistics} />
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-10 gap-6 min-h-[480px] lg:min-h-[520px]">
-        <div className="lg:col-span-7 h-[400px] lg:h-full min-h-0">
+      <section className="grid grid-cols-1 lg:grid-cols-10 gap-6 lg:h-[560px]">
+        <div className="lg:col-span-7 h-[400px] lg:h-full min-h-0 min-w-0">
           <MapView reports={reports} onPointSelect={handlePointSelect} />
         </div>
-        <div className="lg:col-span-3 h-[400px] lg:h-full min-h-0">
+        <div className="lg:col-span-3 h-[400px] lg:h-full min-h-0 min-w-0">
           {selectedReports ? (
             <PotholeDetail reports={selectedReports} onClose={handleCloseDetail} />
           ) : (

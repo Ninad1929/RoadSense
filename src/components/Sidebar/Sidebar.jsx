@@ -14,7 +14,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, isMobileOpen, set
     <aside
       className={`flex-shrink-0 h-screen z-50 flex flex-col bg-[#1E293B]
         transition-all duration-200 ease-in-out
-        fixed lg:static inset-y-0 left-0
+        fixed lg:sticky inset-y-0 left-0
         ${isCollapsed ? 'lg:w-[72px]' : 'lg:w-[250px]'} w-[250px]
         ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
     >
